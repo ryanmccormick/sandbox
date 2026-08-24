@@ -26,6 +26,12 @@ describe('Select', () => {
     expect(screen.getByLabelText('Age')).toBeInTheDocument()
   })
 
+  it('does not mount listbox options until opened', () => {
+    render(<Select label="Age" value="" onChange={jest.fn()} options={ages} />)
+
+    expect(screen.queryByRole('option', { name: 'Ten' })).not.toBeInTheDocument()
+  })
+
   it('opens a listbox and reports the chosen option', async () => {
     const user = userEvent.setup()
     const onChange = jest.fn()

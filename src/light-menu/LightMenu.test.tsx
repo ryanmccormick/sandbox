@@ -46,6 +46,32 @@ describe('LightMenu', () => {
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
 
+  it('does not attach document or window listeners for closed instances', () => {
+    const documentAdd = jest.spyOn(document, 'addEventListener')
+    const windowAdd = jest.spyOn(window, 'addEventListener')
+
+    render(
+      <>
+        {Array.from({ length: 40 }, (_, index) => (
+          <LightMenuButton key={index} label={`Menu ${index}`}>
+            <LightMenuItem>Profile</LightMenuItem>
+          </LightMenuButton>
+        ))}
+      </>,
+    )
+
+    expect(
+      documentAdd.mock.calls.filter(([type]) => type === 'pointerdown'),
+    ).toHaveLength(0)
+    expect(
+      windowAdd.mock.calls.filter(
+        ([type]) => type === 'scroll' || type === 'resize',
+      ),
+    ).toHaveLength(0)
+    documentAdd.mockRestore()
+    windowAdd.mockRestore()
+  })
+
   it('renders items when open', async () => {
     render(
       <OpenMenu>
@@ -108,7 +134,9 @@ describe('LightMenu', () => {
       </OpenMenu>,
     )
 
-    await screen.findByRole('menu')
+    await waitFor(() => {
+      expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveFocus()
+    })
     await user.keyboard('{Escape}')
 
     expect(onClose).toHaveBeenCalledTimes(1)

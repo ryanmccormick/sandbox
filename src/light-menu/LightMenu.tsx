@@ -1,12 +1,16 @@
 import {
   createContext,
+  memo,
+  useCallback,
   useContext,
   useEffect,
   useId,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent,
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -19,34 +23,47 @@ type LightMenuTree = {
   register: (id: string, el: HTMLElement) => () => void
   contains: (node: Node) => boolean
   closeRoot: () => void
-  isTop: (id: string) => boolean
 }
 
-type LightMenuContextValue = {
+type LightMenuSession = {
   close: () => void
   closeRoot: () => void
   dense: boolean
   itemRole: 'menuitem' | 'option'
-  openSubmenuId: string | null
   setOpenSubmenuId: (id: string | null) => void
   depth: number
 }
 
-const LightMenuContext = createContext<LightMenuContextValue | null>(null)
+const LightMenuSessionContext = createContext<LightMenuSession | null>(null)
+const LightMenuSubmenuIdContext = createContext<string | null>(null)
 const LightMenuTreeContext = createContext<LightMenuTree | null>(null)
+
+const PAPER_CLASS =
+  'light-menu-enter fixed rounded bg-white py-2 shadow-light-menu-8 outline-none contain-layout'
+const ITEM_BASE =
+  'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-light-menu-text outline-none select-none hover:bg-black/[0.04] focus:bg-black/[0.04]'
+const ITEM_DENSE = 'min-h-9 py-1.5'
+const ITEM_COMFORTABLE = 'min-h-12 py-[6px]'
+const ITEM_HIGHLIGHTED = 'bg-black/[0.04]'
+const ITEM_SELECTED =
+  'bg-light-menu-primary/8 text-light-menu-primary hover:bg-light-menu-primary/12 focus:bg-light-menu-primary/12'
+const ITEM_DISABLED = 'pointer-events-none text-black/[0.38]'
+
+const BUTTON_BASE =
+  'relative inline-flex items-center justify-center overflow-hidden rounded font-sans text-sm font-medium tracking-[0.02857em] uppercase min-h-[36.5px] px-2 py-1.5 text-light-menu-primary hover:bg-light-menu-primary/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-menu-primary'
+const BUTTON_CONTAINED =
+  'bg-light-menu-primary px-4 text-white shadow-light-menu-2 hover:bg-light-menu-primary-dark hover:shadow-light-menu-4'
+const BUTTON_OUTLINED =
+  'border border-light-menu-primary/50 px-4 hover:bg-light-menu-primary/4'
 
 function createMenuTree(closeRoot: () => void): LightMenuTree {
   const papers = new Map<string, HTMLElement>()
-  const order: string[] = []
 
   return {
     register(id, el) {
       papers.set(id, el)
-      order.push(id)
       return () => {
         papers.delete(id)
-        const index = order.indexOf(id)
-        if (index >= 0) order.splice(index, 1)
       }
     },
     contains(node) {
@@ -56,9 +73,6 @@ function createMenuTree(closeRoot: () => void): LightMenuTree {
       return false
     },
     closeRoot,
-    isTop(id) {
-      return order.at(-1) === id
-    },
   }
 }
 
@@ -76,13 +90,11 @@ function lightMenuItemClass({
   open?: boolean
 }) {
   return cn(
-    'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-light-menu-text outline-none select-none',
-    dense ? 'min-h-9 py-1.5' : 'min-h-12 py-[6px]',
-    'hover:bg-black/[0.04] focus:bg-black/[0.04]',
-    (highlighted || open) && !selected && 'bg-black/[0.04]',
-    selected &&
-      'bg-light-menu-primary/8 text-light-menu-primary hover:bg-light-menu-primary/12 focus:bg-light-menu-primary/12',
-    disabled && 'pointer-events-none text-black/[0.38]',
+    ITEM_BASE,
+    dense ? ITEM_DENSE : ITEM_COMFORTABLE,
+    (highlighted || open) && !selected && ITEM_HIGHLIGHTED,
+    selected && ITEM_SELECTED,
+    disabled && ITEM_DISABLED,
   )
 }
 
@@ -99,8 +111,12 @@ export type LightMenuProps = {
   autoFocus?: boolean
 }
 
-export function LightMenu({
-  open,
+export function LightMenu(props: LightMenuProps) {
+  if (!props.open) return null
+  return <LightMenuSurface {...props} />
+}
+
+function LightMenuSurface({
   anchorEl,
   onClose,
   children,
@@ -117,27 +133,42 @@ export function LightMenu({
   onCloseRef.current = onClose
 
   const parentTree = useContext(LightMenuTreeContext)
-  const parentMenu = useContext(LightMenuContext)
+  const parentSession = useContext(LightMenuSessionContext)
   const treeRef = useRef<LightMenuTree | null>(null)
   if (!parentTree && !treeRef.current) {
     treeRef.current = createMenuTree(() => onCloseRef.current())
   }
   const tree = parentTree ?? treeRef.current!
   const isRoot = !parentTree
-  const depth = (parentMenu?.depth ?? -1) + 1
+  const depth = (parentSession?.depth ?? -1) + 1
 
   const [style, setStyle] = useState<CSSProperties>({})
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null)
 
+  const session = useMemo<LightMenuSession>(
+    () => ({
+      close: () => onCloseRef.current(),
+      closeRoot: () => tree.closeRoot(),
+      dense,
+      itemRole: role === 'listbox' ? 'option' : 'menuitem',
+      setOpenSubmenuId,
+      depth,
+    }),
+    [dense, role, depth, tree],
+  )
+
   useLayoutEffect(() => {
-    if (!open || !anchorEl) return
+    if (!anchorEl) return
+    const paper = paperRef.current
+    if (!paper) return
+
+    const unregister = tree.register(menuId, paper)
 
     const place = () => {
-      const paper = paperRef.current
       const rect = anchorEl.getBoundingClientRect()
-      const paperRect = paper?.getBoundingClientRect()
-      const width = paperRect?.width || minWidth
-      const height = paperRect?.height || 0
+      const paperRect = paper.getBoundingClientRect()
+      const width = paperRect.width || minWidth
+      const height = paperRect.height
 
       let top =
         placement === 'bottom'
@@ -145,8 +176,7 @@ export function LightMenu({
           : placement === 'right'
             ? rect.top
             : rect.top
-      let left =
-        placement === 'right' ? rect.right - 2 : rect.left
+      let left = placement === 'right' ? rect.right - 2 : rect.left
 
       if (placement === 'right' && left + width > window.innerWidth - 8) {
         left = rect.left - width + 2
@@ -166,32 +196,25 @@ export function LightMenu({
     }
 
     place()
-    window.addEventListener('resize', place)
-    window.addEventListener('scroll', place, true)
+    if (autoFocus) {
+      paper
+        .querySelector<HTMLButtonElement>(
+          '[role="menuitem"]:not(:disabled), [role="option"]:not(:disabled)',
+        )
+        ?.focus()
+    }
+    // Viewport events are not in React's synthetic system: resize has no
+    // element target, and scroll does not bubble (hence capture: true).
+    window.addEventListener('resize', place, { passive: true })
+    window.addEventListener('scroll', place, { capture: true, passive: true })
     return () => {
+      unregister()
       window.removeEventListener('resize', place)
       window.removeEventListener('scroll', place, true)
     }
-  }, [open, anchorEl, matchWidth, minWidth, placement, depth])
-
-  useLayoutEffect(() => {
-    if (!open || !paperRef.current) return
-    return tree.register(menuId, paperRef.current)
-  }, [open, tree, menuId])
+  }, [anchorEl, matchWidth, minWidth, placement, depth, tree, menuId, autoFocus])
 
   useEffect(() => {
-    if (!open) {
-      setOpenSubmenuId(null)
-      return
-    }
-
-    const items = () =>
-      Array.from(
-        paperRef.current?.querySelectorAll<HTMLButtonElement>(
-          '[role="menuitem"]:not(:disabled), [role="option"]:not(:disabled)',
-        ) ?? [],
-      )
-
     const onPointerDown = (event: PointerEvent) => {
       if (!isRoot) return
       const target = event.target as Node
@@ -200,85 +223,74 @@ export function LightMenu({
       tree.closeRoot()
     }
 
-    const onKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (!tree.isTop(menuId)) return
-
-      if (event.key === 'Escape') {
-        event.preventDefault()
-        onClose()
-        anchorEl?.focus()
-        return
-      }
-
-      if (role !== 'menu') return
-
-      const enabled = items()
-      const current = enabled.findIndex((item) => item === document.activeElement)
-
-      if (event.key === 'ArrowDown') {
-        event.preventDefault()
-        enabled[(current + 1 + enabled.length) % enabled.length]?.focus()
-      } else if (event.key === 'ArrowUp') {
-        event.preventDefault()
-        enabled[(current - 1 + enabled.length) % enabled.length]?.focus()
-      } else if (event.key === 'Home') {
-        event.preventDefault()
-        enabled[0]?.focus()
-      } else if (event.key === 'End') {
-        event.preventDefault()
-        enabled.at(-1)?.focus()
-      } else if (event.key === 'ArrowLeft' && !isRoot) {
-        event.preventDefault()
-        onClose()
-        anchorEl?.focus()
-      } else if (event.key === 'Tab') {
-        tree.closeRoot()
-      }
-    }
-
     document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('pointerdown', onPointerDown)
+  }, [anchorEl, isRoot, tree])
 
-    const frame = window.requestAnimationFrame(() => {
-      if (autoFocus) items()[0]?.focus()
-    })
-
-    return () => {
-      window.cancelAnimationFrame(frame)
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      onCloseRef.current()
+      anchorEl?.focus()
+      return
     }
-  }, [open, anchorEl, onClose, role, autoFocus, isRoot, menuId, tree])
 
-  if (!open) return null
+    if (event.key === 'Tab') {
+      tree.closeRoot()
+      return
+    }
+
+    if (role !== 'menu') return
+
+    const enabled = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]:not(:disabled), [role="option"]:not(:disabled)',
+      ),
+    )
+    const current = enabled.findIndex((item) => item === document.activeElement)
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      event.stopPropagation()
+      enabled[(current + 1 + enabled.length) % enabled.length]?.focus()
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      event.stopPropagation()
+      enabled[(current - 1 + enabled.length) % enabled.length]?.focus()
+    } else if (event.key === 'Home') {
+      event.preventDefault()
+      event.stopPropagation()
+      enabled[0]?.focus()
+    } else if (event.key === 'End') {
+      event.preventDefault()
+      event.stopPropagation()
+      enabled.at(-1)?.focus()
+    } else if (event.key === 'ArrowLeft' && !isRoot) {
+      event.preventDefault()
+      event.stopPropagation()
+      onCloseRef.current()
+      anchorEl?.focus()
+    }
+  }
 
   const paper = (
-    <LightMenuContext.Provider
-      value={{
-        close: onClose,
-        closeRoot: () => tree.closeRoot(),
-        dense,
-        itemRole: role === 'listbox' ? 'option' : 'menuitem',
-        openSubmenuId,
-        setOpenSubmenuId,
-        depth,
-      }}
-    >
-      <div
-        ref={paperRef}
-        role={role}
-        tabIndex={-1}
-        style={style}
-        className={cn(
-          'light-menu-enter fixed rounded bg-white py-2 shadow-light-menu-8 outline-none',
-          matchWidth ? 'origin-top' : 'origin-top-left',
-        )}
-      >
-        <ul className="m-0 max-h-[calc(100vh-96px)] list-none overflow-auto p-0">
-          {children}
-        </ul>
-      </div>
-    </LightMenuContext.Provider>
+    <LightMenuSessionContext.Provider value={session}>
+      <LightMenuSubmenuIdContext.Provider value={openSubmenuId}>
+        <div
+          ref={paperRef}
+          role={role}
+          tabIndex={-1}
+          style={style}
+          className={cn(PAPER_CLASS, matchWidth ? 'origin-top' : 'origin-top-left')}
+          onKeyDown={handleKeyDown}
+        >
+          <ul className="m-0 max-h-[calc(100vh-96px)] list-none overflow-auto p-0">
+            {children}
+          </ul>
+        </div>
+      </LightMenuSubmenuIdContext.Provider>
+    </LightMenuSessionContext.Provider>
   )
 
   const portaled = createPortal(paper, document.body)
@@ -300,7 +312,7 @@ export type LightMenuItemProps = {
   shortcut?: string
 }
 
-export function LightMenuItem({
+export const LightMenuItem = memo(function LightMenuItem({
   children,
   onClick,
   disabled = false,
@@ -309,23 +321,23 @@ export function LightMenuItem({
   icon,
   shortcut,
 }: LightMenuItemProps) {
-  const ctx = useContext(LightMenuContext)
+  const session = useContext(LightMenuSessionContext)
 
   return (
     <li role="none">
       <button
         type="button"
-        role={ctx?.itemRole ?? 'menuitem'}
+        role={session?.itemRole ?? 'menuitem'}
         disabled={disabled}
-        aria-selected={ctx?.itemRole === 'option' ? selected : undefined}
-        onMouseEnter={() => ctx?.setOpenSubmenuId(null)}
+        aria-selected={session?.itemRole === 'option' ? selected : undefined}
+        onMouseEnter={() => session?.setOpenSubmenuId(null)}
         onClick={() => {
           if (disabled) return
           onClick?.()
-          ctx?.closeRoot()
+          session?.closeRoot()
         }}
         className={lightMenuItemClass({
-          dense: ctx?.dense,
+          dense: session?.dense,
           selected,
           highlighted,
           disabled,
@@ -351,11 +363,11 @@ export function LightMenuItem({
       </button>
     </li>
   )
-}
+})
 
-export function LightMenuDivider() {
+export const LightMenuDivider = memo(function LightMenuDivider() {
   return <li role="separator" className="my-2 h-px list-none bg-black/12" />
-}
+})
 
 export type LightMenuSubMenuProps = {
   label: ReactNode
@@ -364,23 +376,28 @@ export type LightMenuSubMenuProps = {
   disabled?: boolean
 }
 
-export function LightMenuSubMenu({
+export const LightMenuSubMenu = memo(function LightMenuSubMenu({
   label,
   children,
   icon,
   disabled = false,
 }: LightMenuSubMenuProps) {
-  const ctx = useContext(LightMenuContext)
+  const session = useContext(LightMenuSessionContext)
+  const openSubmenuId = useContext(LightMenuSubmenuIdContext)
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [focusOnOpen, setFocusOnOpen] = useState(false)
 
-  const open = ctx?.openSubmenuId === id
+  const open = openSubmenuId === id
+
+  const closeSubmenu = useCallback(() => {
+    session?.setOpenSubmenuId(null)
+  }, [session])
 
   function openSubmenu(withFocus: boolean) {
-    if (disabled || !ctx) return
+    if (disabled || !session) return
     setFocusOnOpen(withFocus)
-    ctx.setOpenSubmenuId(id)
+    session.setOpenSubmenuId(id)
   }
 
   return (
@@ -402,7 +419,7 @@ export function LightMenuSubMenu({
           }
         }}
         className={lightMenuItemClass({
-          dense: ctx?.dense,
+          dense: session?.dense,
           disabled,
           open,
         })}
@@ -417,20 +434,22 @@ export function LightMenuSubMenu({
           <ChevronRightIcon />
         </span>
       </button>
-      <LightMenu
-        open={Boolean(open && triggerRef.current)}
-        anchorEl={triggerRef.current}
-        onClose={() => ctx?.setOpenSubmenuId(null)}
-        placement="right"
-        dense={ctx?.dense}
-        autoFocus={focusOnOpen}
-        minWidth={160}
-      >
-        {children}
-      </LightMenu>
+      {open ? (
+        <LightMenu
+          open
+          anchorEl={triggerRef.current}
+          onClose={closeSubmenu}
+          placement="right"
+          dense={session?.dense}
+          autoFocus={focusOnOpen}
+          minWidth={160}
+        >
+          {children}
+        </LightMenu>
+      ) : null}
     </li>
   )
-}
+})
 
 export type LightMenuButtonProps = {
   label: ReactNode
@@ -440,7 +459,7 @@ export type LightMenuButtonProps = {
   minWidth?: number
 }
 
-export function LightMenuButton({
+export const LightMenuButton = memo(function LightMenuButton({
   label,
   children,
   dense,
@@ -449,6 +468,7 @@ export function LightMenuButton({
 }: LightMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
+  const close = useCallback(() => setAnchorEl(null), [])
 
   return (
     <>
@@ -460,26 +480,24 @@ export function LightMenuButton({
           setAnchorEl((current) => (current ? null : event.currentTarget))
         }}
         className={cn(
-          'relative inline-flex items-center justify-center overflow-hidden rounded font-sans text-sm font-medium tracking-[0.02857em] uppercase',
-          'min-h-[36.5px] px-2 py-1.5 text-light-menu-primary',
-          'hover:bg-light-menu-primary/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-menu-primary',
-          variant === 'contained' &&
-            'bg-light-menu-primary px-4 text-white shadow-light-menu-2 hover:bg-light-menu-primary-dark hover:shadow-light-menu-4',
-          variant === 'outlined' &&
-            'border border-light-menu-primary/50 px-4 hover:bg-light-menu-primary/4',
+          BUTTON_BASE,
+          variant === 'contained' && BUTTON_CONTAINED,
+          variant === 'outlined' && BUTTON_OUTLINED,
         )}
       >
         {label}
       </button>
-      <LightMenu
-        open={open}
-        anchorEl={anchorEl}
-        onClose={() => setAnchorEl(null)}
-        dense={dense}
-        minWidth={minWidth ?? 112}
-      >
-        {children}
-      </LightMenu>
+      {open ? (
+        <LightMenu
+          open
+          anchorEl={anchorEl}
+          onClose={close}
+          dense={dense}
+          minWidth={minWidth ?? 112}
+        >
+          {children}
+        </LightMenu>
+      ) : null}
     </>
   )
-}
+})

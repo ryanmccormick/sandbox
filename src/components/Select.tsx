@@ -1,4 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  memo,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { cn } from '../lib/cn'
 import { LightMenu, LightMenuItem } from 'light-menu'
 
@@ -22,7 +29,7 @@ export type SelectProps<T extends string | number = string> = {
   className?: string
 }
 
-export function Select<T extends string | number = string>({
+function SelectInner<T extends string | number = string>({
   label,
   value,
   onChange,
@@ -51,17 +58,19 @@ export function Select<T extends string | number = string>({
     [options],
   )
 
-  useEffect(() => {
-    if (!open) return
+  function highlightForValue() {
     const selectedIndex = options.findIndex((option) => option.value === value)
-    setHighlight(
-      selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0]?.index ?? 0),
-    )
-  }, [open, options, value, enabledIndexes])
+    return selectedIndex >= 0 ? selectedIndex : (enabledIndexes[0]?.index ?? 0)
+  }
 
   function close() {
     setOpen(false)
     triggerRef.current?.focus()
+  }
+
+  function openMenu() {
+    setHighlight(highlightForValue())
+    setOpen(true)
   }
 
   function selectIndex(index: number) {
@@ -85,7 +94,7 @@ export function Select<T extends string | number = string>({
     if (!open) {
       if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
         event.preventDefault()
-        setOpen(true)
+        openMenu()
       }
       return
     }
@@ -171,9 +180,9 @@ export function Select<T extends string | number = string>({
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={open}
-          aria-controls={`${id}-menu`}
+          aria-controls={open ? `${id}-menu` : undefined}
           aria-label={label}
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => (open ? close() : openMenu())}
           onKeyDown={onKeyDown}
           className={cn(
             'relative box-border flex w-full min-w-[120px] cursor-pointer items-center bg-transparent text-left font-sans text-base leading-[1.4375] tracking-[0.00938em] text-light-menu-text outline-none',
@@ -247,26 +256,30 @@ export function Select<T extends string | number = string>({
         </p>
       ) : null}
 
-      <LightMenu
-        open={open}
-        anchorEl={triggerRef.current}
-        onClose={close}
-        matchWidth
-        placement="bottom"
-        role="listbox"
-      >
-        {options.map((option, index) => (
-          <LightMenuItem
-            key={`${String(option.value)}-${option.label}`}
-            disabled={option.disabled}
-            selected={option.value === value}
-            highlighted={highlight === index}
-            onClick={() => selectIndex(index)}
-          >
-            {option.label}
-          </LightMenuItem>
-        ))}
-      </LightMenu>
+      {open ? (
+        <LightMenu
+          open
+          anchorEl={triggerRef.current}
+          onClose={close}
+          matchWidth
+          placement="bottom"
+          role="listbox"
+        >
+          {options.map((option, index) => (
+            <LightMenuItem
+              key={`${String(option.value)}-${option.label}`}
+              disabled={option.disabled}
+              selected={option.value === value}
+              highlighted={highlight === index}
+              onClick={() => selectIndex(index)}
+            >
+              {option.label}
+            </LightMenuItem>
+          ))}
+        </LightMenu>
+      ) : null}
     </div>
   )
 }
+
+export const Select = memo(SelectInner) as typeof SelectInner
