@@ -85,6 +85,18 @@ describe('LightMenu', () => {
     expect(screen.getByRole('menuitem', { name: 'My account' })).toBeInTheDocument()
   })
 
+  it('focuses the menu paper, not the first item, on open', async () => {
+    render(
+      <OpenMenu>
+        <LightMenuItem>Profile</LightMenuItem>
+        <LightMenuItem>My account</LightMenuItem>
+      </OpenMenu>,
+    )
+
+    expect(await screen.findByRole('menu')).toHaveFocus()
+    expect(screen.getByRole('menuitem', { name: 'Profile' })).not.toHaveFocus()
+  })
+
   it('calls onClick and closes the tree when an item is chosen', async () => {
     const user = userEvent.setup()
     const onClick = jest.fn()
@@ -135,7 +147,7 @@ describe('LightMenu', () => {
     )
 
     await waitFor(() => {
-      expect(screen.getByRole('menuitem', { name: 'Profile' })).toHaveFocus()
+      expect(screen.getByRole('menu')).toHaveFocus()
     })
     await user.keyboard('{Escape}')
 
@@ -171,7 +183,10 @@ describe('LightMenu', () => {
     )
 
     const profile = await screen.findByRole('menuitem', { name: 'Profile' })
-    await waitFor(() => expect(profile).toHaveFocus())
+    await waitFor(() => expect(screen.getByRole('menu')).toHaveFocus())
+
+    await user.keyboard('{ArrowDown}')
+    expect(profile).toHaveFocus()
 
     await user.keyboard('{ArrowDown}')
     expect(screen.getByRole('menuitem', { name: 'My account' })).toHaveFocus()

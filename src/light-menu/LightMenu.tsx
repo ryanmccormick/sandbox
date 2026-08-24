@@ -39,14 +39,14 @@ const LightMenuSubmenuIdContext = createContext<string | null>(null)
 const LightMenuTreeContext = createContext<LightMenuTree | null>(null)
 
 const PAPER_CLASS =
-  'light-menu-enter fixed rounded bg-white py-2 shadow-light-menu-8 outline-none contain-layout'
+  'group/menu light-menu-enter fixed rounded bg-white py-2 shadow-light-menu-8 outline-none contain-layout'
 const ITEM_BASE =
-  'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-light-menu-text outline-none select-none hover:bg-black/[0.04] focus:bg-black/[0.04]'
+  'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-light-menu-text outline-none select-none focus-visible:bg-black/[0.04] group-data-[allow-hover]/menu:hover:bg-black/[0.04]'
 const ITEM_DENSE = 'min-h-9 py-1.5'
 const ITEM_COMFORTABLE = 'min-h-12 py-[6px]'
 const ITEM_HIGHLIGHTED = 'bg-black/[0.04]'
 const ITEM_SELECTED =
-  'bg-light-menu-primary/8 text-light-menu-primary hover:bg-light-menu-primary/12 focus:bg-light-menu-primary/12'
+  'bg-light-menu-primary/8 text-light-menu-primary focus-visible:bg-light-menu-primary/12 group-data-[allow-hover]/menu:hover:bg-light-menu-primary/12'
 const ITEM_DISABLED = 'pointer-events-none text-black/[0.38]'
 
 const BUTTON_BASE =
@@ -125,7 +125,7 @@ function LightMenuSurface({
   placement = 'overlay',
   minWidth = 112,
   role = 'menu',
-  autoFocus = role === 'menu',
+  autoFocus = false,
 }: LightMenuProps) {
   const menuId = useId()
   const paperRef = useRef<HTMLDivElement>(null)
@@ -144,6 +144,7 @@ function LightMenuSurface({
 
   const [style, setStyle] = useState<CSSProperties>({})
   const [openSubmenuId, setOpenSubmenuId] = useState<string | null>(null)
+  const [allowHover, setAllowHover] = useState(false)
 
   const session = useMemo<LightMenuSession>(
     () => ({
@@ -202,6 +203,8 @@ function LightMenuSurface({
           '[role="menuitem"]:not(:disabled), [role="option"]:not(:disabled)',
         )
         ?.focus()
+    } else if (role === 'menu') {
+      paper.focus({ preventScroll: true })
     }
     // Viewport events are not in React's synthetic system: resize has no
     // element target, and scroll does not bubble (hence capture: true).
@@ -212,7 +215,7 @@ function LightMenuSurface({
       window.removeEventListener('resize', place)
       window.removeEventListener('scroll', place, true)
     }
-  }, [anchorEl, matchWidth, minWidth, placement, depth, tree, menuId, autoFocus])
+  }, [anchorEl, matchWidth, minWidth, placement, depth, tree, menuId, autoFocus, role])
 
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
@@ -253,11 +256,16 @@ function LightMenuSurface({
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       event.stopPropagation()
-      enabled[(current + 1 + enabled.length) % enabled.length]?.focus()
+      const next = current < 0 ? 0 : (current + 1) % enabled.length
+      enabled[next]?.focus()
     } else if (event.key === 'ArrowUp') {
       event.preventDefault()
       event.stopPropagation()
-      enabled[(current - 1 + enabled.length) % enabled.length]?.focus()
+      const next =
+        current < 0
+          ? enabled.length - 1
+          : (current - 1 + enabled.length) % enabled.length
+      enabled[next]?.focus()
     } else if (event.key === 'Home') {
       event.preventDefault()
       event.stopPropagation()
@@ -282,8 +290,12 @@ function LightMenuSurface({
           role={role}
           tabIndex={-1}
           style={style}
+          data-allow-hover={allowHover ? '' : undefined}
           className={cn(PAPER_CLASS, matchWidth ? 'origin-top' : 'origin-top-left')}
           onKeyDown={handleKeyDown}
+          onPointerMove={() => {
+            if (!allowHover) setAllowHover(true)
+          }}
         >
           <ul className="m-0 max-h-[calc(100vh-96px)] list-none overflow-auto p-0">
             {children}
