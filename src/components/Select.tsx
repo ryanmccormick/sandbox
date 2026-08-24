@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { cn } from '../lib/cn'
-import { Menu, MenuItem } from './Menu'
+import { LightMenu, LightMenuItem } from 'light-menu'
 
 export type SelectOption<T extends string | number = string> = {
   value: T | ''
@@ -114,15 +114,15 @@ export function Select<T extends string | number = string>({
   }
 
   const labelColor = error
-    ? 'text-mui-error'
+    ? 'text-light-menu-error'
     : open
-      ? 'text-mui-primary'
+      ? 'text-light-menu-primary'
       : 'text-black/60'
 
   const borderColor = error
-    ? 'border-mui-error'
+    ? 'border-light-menu-error'
     : open
-      ? 'border-mui-primary'
+      ? 'border-light-menu-primary'
       : 'border-black/[0.23] group-hover:border-black/[0.87]'
 
   return (
@@ -176,7 +176,7 @@ export function Select<T extends string | number = string>({
           onClick={() => setOpen((current) => !current)}
           onKeyDown={onKeyDown}
           className={cn(
-            'relative box-border flex w-full min-w-[120px] cursor-pointer items-center bg-transparent text-left font-sans text-base leading-[1.4375] tracking-[0.00938em] text-mui-text outline-none',
+            'relative box-border flex w-full min-w-[120px] cursor-pointer items-center bg-transparent text-left font-sans text-base leading-[1.4375] tracking-[0.00938em] text-light-menu-text outline-none',
             size === 'medium' && variant === 'outlined' && 'h-14 pr-8 pl-3.5',
             size === 'small' && variant === 'outlined' && 'h-10 pr-8 pl-3.5',
             variant === 'filled' &&
@@ -227,9 +227,9 @@ export function Select<T extends string | number = string>({
               variant === 'filled' && 'rounded-t',
               open || error ? 'h-0.5' : 'h-px',
               error
-                ? 'bg-mui-error'
+                ? 'bg-light-menu-error'
                 : open
-                  ? 'bg-mui-primary'
+                  ? 'bg-light-menu-primary'
                   : 'bg-black/[0.42] group-hover:bg-black/87',
             )}
           />
@@ -240,14 +240,14 @@ export function Select<T extends string | number = string>({
         <p
           className={cn(
             'mx-[14px] mt-[3px] mb-0 font-sans text-xs leading-[1.66] tracking-[0.03333em]',
-            error ? 'text-mui-error' : 'text-black/60',
+            error ? 'text-light-menu-error' : 'text-black/60',
           )}
         >
           {helperText}
         </p>
       ) : null}
 
-      <Menu
+      <LightMenu
         open={open}
         anchorEl={triggerRef.current}
         onClose={close}
@@ -256,7 +256,7 @@ export function Select<T extends string | number = string>({
         role="listbox"
       >
         {options.map((option, index) => (
-          <MenuItem
+          <LightMenuItem
             key={`${String(option.value)}-${option.label}`}
             disabled={option.disabled}
             selected={option.value === value}
@@ -264,9 +264,9 @@ export function Select<T extends string | number = string>({
             onClick={() => selectIndex(index)}
           >
             {option.label}
-          </MenuItem>
+          </LightMenuItem>
         ))}
-      </Menu>
+      </LightMenu>
     </div>
   )
 }

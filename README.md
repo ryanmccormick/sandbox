@@ -1,13 +1,16 @@
-# MUI-style dropdown (Tailwind only)
+# light-menu
 
-React + Tailwind recreation of Material UI **Select** and **Menu**. No `@mui/*`, Radix, or Headless UI.
+Light Menu as a library. Peer deps: `react`, `react-dom`, `tailwindcss` v4.
 
-```bash
-npm install
-npm run dev
+```tsx
+import {
+  LightMenu,
+  LightMenuButton,
+  LightMenuDivider,
+  LightMenuItem,
+  LightMenuSubMenu,
+} from 'light-menu'
+import 'light-menu/styles.css'
 ```
 
-Reusable pieces live in `src/components/`:
-
-- `Select` — outlined / filled / standard, floating label, notched border
-- `Menu` / `MenuButton` / `MenuItem` / `MenuDivider` — paper menu with MUI elevation and grow animation
+The demo app in `src/` consumes that same public entry.

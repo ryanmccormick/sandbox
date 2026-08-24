@@ -10,12 +10,12 @@ import {
   SettingsIcon,
 } from './components/icons'
 import {
-  Menu,
-  MenuButton,
-  MenuDivider,
-  MenuItem,
-  SubMenu,
-} from './components/Menu'
+  LightMenu,
+  LightMenuButton,
+  LightMenuDivider,
+  LightMenuItem,
+  LightMenuSubMenu,
+} from 'light-menu'
 import { Select } from './components/Select'
 
 const ages = [
@@ -44,8 +44,8 @@ export default function App() {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
 
   return (
-    <div className="min-h-svh bg-[#f5f5f5] font-sans text-mui-text">
-      <header className="border-b border-black/[0.12] bg-[#1976d2] px-6 py-8 text-white shadow-mui-4">
+    <div className="min-h-svh bg-[#f5f5f5] font-sans text-light-menu-text">
+      <header className="border-b border-black/[0.12] bg-[#1976d2] px-6 py-8 text-white shadow-light-menu-4">
         <p className="m-0 text-sm font-medium tracking-[0.1em] uppercase opacity-80">
           Tailwind CSS only
         </p>
@@ -53,20 +53,20 @@ export default function App() {
           Dropdown menu
         </h1>
         <p className="m-0 max-w-xl text-base leading-6 text-white/80">
-          Material UI Select and Menu, rebuilt with React and Tailwind — same
+          Light Menu select and dropdown, rebuilt with React and Tailwind — same
           outlined notch, paper elevation, Roboto type, and grow animation. No
-          MUI, Headless UI, or Radix.
+          extra UI libraries.
         </p>
       </header>
 
       <main className="mx-auto flex max-w-[920px] flex-col gap-6 px-4 py-8">
-        <section className="rounded bg-white p-6 shadow-mui-1">
+        <section className="rounded bg-white p-6 shadow-light-menu-1">
           <h2 className="mt-0 mb-1 font-sans text-xl font-normal tracking-[0.00735em]">
             Basic select
           </h2>
           <p className="mt-0 mb-6 text-sm text-black/60">
             Outlined field with a floating label and notched border, matching
-            MUI&apos;s default Select.
+            the default Light Menu select.
           </p>
           <div className="flex flex-wrap items-start gap-6">
             <Select
@@ -88,7 +88,7 @@ export default function App() {
           </div>
         </section>
 
-        <section className="rounded bg-white p-6 shadow-mui-1">
+        <section className="rounded bg-white p-6 shadow-light-menu-1">
           <h2 className="mt-0 mb-1 font-sans text-xl font-normal tracking-[0.00735em]">
             Variants and sizes
           </h2>
@@ -128,21 +128,21 @@ export default function App() {
           </div>
         </section>
 
-        <section className="rounded bg-white p-6 shadow-mui-1">
+        <section className="rounded bg-white p-6 shadow-light-menu-1">
           <h2 className="mt-0 mb-1 font-sans text-xl font-normal tracking-[0.00735em]">
             Basic menu
           </h2>
           <p className="mt-0 mb-6 text-sm text-black/60">
-            MUI Menu opens from the trigger&apos;s top-left and overlays the
+            The menu opens from the trigger&apos;s top-left and overlays the
             button. Keyboard: arrows, Enter, Escape.
           </p>
           <div className="flex flex-wrap items-center gap-4">
-            <MenuButton label="Dashboard">
-              <MenuItem>Profile</MenuItem>
-              <MenuItem>My account</MenuItem>
-              <MenuDivider />
-              <MenuItem>Logout</MenuItem>
-            </MenuButton>
+            <LightMenuButton label="Dashboard">
+              <LightMenuItem>Profile</LightMenuItem>
+              <LightMenuItem>My account</LightMenuItem>
+              <LightMenuDivider />
+              <LightMenuItem>Logout</LightMenuItem>
+            </LightMenuButton>
 
             <Button
               variant="contained"
@@ -154,27 +154,27 @@ export default function App() {
             >
               Open menu
             </Button>
-            <Menu
+            <LightMenu
               open={Boolean(anchorEl)}
               anchorEl={anchorEl}
               onClose={() => setAnchorEl(null)}
             >
-              <MenuItem icon={<SendIcon />} shortcut="⌘X">
+              <LightMenuItem icon={<SendIcon />} shortcut="⌘X">
                 Cut
-              </MenuItem>
-              <MenuItem icon={<DraftsIcon />} shortcut="⌘C">
+              </LightMenuItem>
+              <LightMenuItem icon={<DraftsIcon />} shortcut="⌘C">
                 Copy
-              </MenuItem>
-              <MenuItem icon={<InboxIcon />} shortcut="⌘V">
+              </LightMenuItem>
+              <LightMenuItem icon={<InboxIcon />} shortcut="⌘V">
                 Paste
-              </MenuItem>
-              <MenuDivider />
-              <MenuItem disabled>Web Clipboard</MenuItem>
-            </Menu>
+              </LightMenuItem>
+              <LightMenuDivider />
+              <LightMenuItem disabled>Web Clipboard</LightMenuItem>
+            </LightMenu>
           </div>
         </section>
 
-        <section className="rounded bg-white p-6 shadow-mui-1">
+        <section className="rounded bg-white p-6 shadow-light-menu-1">
           <h2 className="mt-0 mb-1 font-sans text-xl font-normal tracking-[0.00735em]">
             Nested menu
           </h2>
@@ -183,45 +183,45 @@ export default function App() {
             opens to the side; Escape or Arrow Left closes one level.
           </p>
           <div className="flex flex-wrap items-start gap-8">
-            <MenuButton label="Options" variant="contained" minWidth={200}>
-              <MenuItem>New file</MenuItem>
-              <MenuItem>Save</MenuItem>
-              <MenuDivider />
-              <SubMenu label="Export">
-                <MenuItem>PDF</MenuItem>
-                <MenuItem>PNG</MenuItem>
-                <SubMenu label="SVG">
-                  <MenuItem>Optimized</MenuItem>
-                  <MenuItem>Original</MenuItem>
-                </SubMenu>
-              </SubMenu>
-              <SubMenu label="Share">
-                <MenuItem>Email</MenuItem>
-                <MenuItem>Copy link</MenuItem>
-                <MenuItem disabled>Embed</MenuItem>
-              </SubMenu>
-              <MenuDivider />
-              <MenuItem>Delete</MenuItem>
-            </MenuButton>
+            <LightMenuButton label="Options" variant="contained" minWidth={200}>
+              <LightMenuItem>New file</LightMenuItem>
+              <LightMenuItem>Save</LightMenuItem>
+              <LightMenuDivider />
+              <LightMenuSubMenu label="Export">
+                <LightMenuItem>PDF</LightMenuItem>
+                <LightMenuItem>PNG</LightMenuItem>
+                <LightMenuSubMenu label="SVG">
+                  <LightMenuItem>Optimized</LightMenuItem>
+                  <LightMenuItem>Original</LightMenuItem>
+                </LightMenuSubMenu>
+              </LightMenuSubMenu>
+              <LightMenuSubMenu label="Share">
+                <LightMenuItem>Email</LightMenuItem>
+                <LightMenuItem>Copy link</LightMenuItem>
+                <LightMenuItem disabled>Embed</LightMenuItem>
+              </LightMenuSubMenu>
+              <LightMenuDivider />
+              <LightMenuItem>Delete</LightMenuItem>
+            </LightMenuButton>
 
-            <MenuButton label="Account" variant="outlined" minWidth={220}>
-              <MenuItem icon={<PersonIcon />}>Profile</MenuItem>
-              <SubMenu label="Settings" icon={<SettingsIcon />}>
-                <MenuItem>Account</MenuItem>
-                <MenuItem>Appearance</MenuItem>
-                <SubMenu label="Notifications">
-                  <MenuItem>Email</MenuItem>
-                  <MenuItem>Push</MenuItem>
-                  <MenuItem>SMS</MenuItem>
-                </SubMenu>
-              </SubMenu>
-              <MenuDivider />
-              <MenuItem icon={<LogoutIcon />}>Logout</MenuItem>
-            </MenuButton>
+            <LightMenuButton label="Account" variant="outlined" minWidth={220}>
+              <LightMenuItem icon={<PersonIcon />}>Profile</LightMenuItem>
+              <LightMenuSubMenu label="Settings" icon={<SettingsIcon />}>
+                <LightMenuItem>Account</LightMenuItem>
+                <LightMenuItem>Appearance</LightMenuItem>
+                <LightMenuSubMenu label="Notifications">
+                  <LightMenuItem>Email</LightMenuItem>
+                  <LightMenuItem>Push</LightMenuItem>
+                  <LightMenuItem>SMS</LightMenuItem>
+                </LightMenuSubMenu>
+              </LightMenuSubMenu>
+              <LightMenuDivider />
+              <LightMenuItem icon={<LogoutIcon />}>Logout</LightMenuItem>
+            </LightMenuButton>
           </div>
         </section>
 
-        <section className="rounded bg-white p-6 shadow-mui-1">
+        <section className="rounded bg-white p-6 shadow-light-menu-1">
           <h2 className="mt-0 mb-1 font-sans text-xl font-normal tracking-[0.00735em]">
             Icon menu and selected item
           </h2>
@@ -229,39 +229,39 @@ export default function App() {
             Leading icons, selected state in primary blue, and a dense list.
           </p>
           <div className="flex flex-wrap items-start gap-8">
-            <MenuButton label="Account" variant="outlined">
-              <MenuItem icon={<PersonIcon />}>Profile</MenuItem>
-              <MenuItem icon={<SettingsIcon />}>My account</MenuItem>
-              <MenuDivider />
-              <MenuItem icon={<LogoutIcon />}>Logout</MenuItem>
-            </MenuButton>
+            <LightMenuButton label="Account" variant="outlined">
+              <LightMenuItem icon={<PersonIcon />}>Profile</LightMenuItem>
+              <LightMenuItem icon={<SettingsIcon />}>My account</LightMenuItem>
+              <LightMenuDivider />
+              <LightMenuItem icon={<LogoutIcon />}>Logout</LightMenuItem>
+            </LightMenuButton>
 
             <div>
               <p className="mt-0 mb-2 text-sm text-black/60">Selected menu</p>
-              <MenuButton label={selected} variant="contained">
+              <LightMenuButton label={selected} variant="contained">
                 {['Profile', 'My account', 'Logout'].map((item) => (
-                  <MenuItem
+                  <LightMenuItem
                     key={item}
                     selected={selected === item}
                     icon={selected === item ? <CheckIcon /> : <span className="w-5" />}
                     onClick={() => setSelected(item)}
                   >
                     {item}
-                  </MenuItem>
+                  </LightMenuItem>
                 ))}
-              </MenuButton>
+              </LightMenuButton>
             </div>
 
             <div>
               <p className="mt-0 mb-2 text-sm text-black/60">Dense</p>
-              <MenuButton label="Dense menu" dense>
-                <MenuItem>New file</MenuItem>
-                <MenuItem>New folder</MenuItem>
-                <MenuItem>Open recent</MenuItem>
-                <MenuDivider />
-                <MenuItem>Save</MenuItem>
-                <MenuItem>Save as…</MenuItem>
-              </MenuButton>
+              <LightMenuButton label="Dense menu" dense>
+                <LightMenuItem>New file</LightMenuItem>
+                <LightMenuItem>New folder</LightMenuItem>
+                <LightMenuItem>Open recent</LightMenuItem>
+                <LightMenuDivider />
+                <LightMenuItem>Save</LightMenuItem>
+                <LightMenuItem>Save as…</LightMenuItem>
+              </LightMenuButton>
             </div>
           </div>
         </section>

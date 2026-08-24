@@ -10,19 +10,19 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { cn } from '../lib/cn'
-import { ChevronRightIcon } from './icons'
+import { ChevronRightIcon } from './ChevronRightIcon'
+import { cn } from './cn'
 
-type MenuPlacement = 'overlay' | 'bottom' | 'right'
+type LightMenuPlacement = 'overlay' | 'bottom' | 'right'
 
-type MenuTree = {
+type LightMenuTree = {
   register: (id: string, el: HTMLElement) => () => void
   contains: (node: Node) => boolean
   closeRoot: () => void
   isTop: (id: string) => boolean
 }
 
-type MenuContextValue = {
+type LightMenuContextValue = {
   close: () => void
   closeRoot: () => void
   dense: boolean
@@ -32,10 +32,10 @@ type MenuContextValue = {
   depth: number
 }
 
-const MenuContext = createContext<MenuContextValue | null>(null)
-const MenuTreeContext = createContext<MenuTree | null>(null)
+const LightMenuContext = createContext<LightMenuContextValue | null>(null)
+const LightMenuTreeContext = createContext<LightMenuTree | null>(null)
 
-function createMenuTree(closeRoot: () => void): MenuTree {
+function createMenuTree(closeRoot: () => void): LightMenuTree {
   const papers = new Map<string, HTMLElement>()
   const order: string[] = []
 
@@ -62,7 +62,7 @@ function createMenuTree(closeRoot: () => void): MenuTree {
   }
 }
 
-function menuItemClass({
+function lightMenuItemClass({
   dense,
   selected,
   highlighted,
@@ -76,30 +76,30 @@ function menuItemClass({
   open?: boolean
 }) {
   return cn(
-    'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-mui-text outline-none select-none',
+    'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-light-menu-text outline-none select-none',
     dense ? 'min-h-9 py-1.5' : 'min-h-12 py-[6px]',
     'hover:bg-black/[0.04] focus:bg-black/[0.04]',
     (highlighted || open) && !selected && 'bg-black/[0.04]',
     selected &&
-      'bg-mui-primary/8 text-mui-primary hover:bg-mui-primary/12 focus:bg-mui-primary/12',
+      'bg-light-menu-primary/8 text-light-menu-primary hover:bg-light-menu-primary/12 focus:bg-light-menu-primary/12',
     disabled && 'pointer-events-none text-black/[0.38]',
   )
 }
 
-export type MenuProps = {
+export type LightMenuProps = {
   open: boolean
   anchorEl: HTMLElement | null
   onClose: () => void
   children: ReactNode
   dense?: boolean
   matchWidth?: boolean
-  placement?: MenuPlacement
+  placement?: LightMenuPlacement
   minWidth?: number
   role?: 'menu' | 'listbox'
   autoFocus?: boolean
 }
 
-export function Menu({
+export function LightMenu({
   open,
   anchorEl,
   onClose,
@@ -110,15 +110,15 @@ export function Menu({
   minWidth = 112,
   role = 'menu',
   autoFocus = role === 'menu',
-}: MenuProps) {
+}: LightMenuProps) {
   const menuId = useId()
   const paperRef = useRef<HTMLDivElement>(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  const parentTree = useContext(MenuTreeContext)
-  const parentMenu = useContext(MenuContext)
-  const treeRef = useRef<MenuTree | null>(null)
+  const parentTree = useContext(LightMenuTreeContext)
+  const parentMenu = useContext(LightMenuContext)
+  const treeRef = useRef<LightMenuTree | null>(null)
   if (!parentTree && !treeRef.current) {
     treeRef.current = createMenuTree(() => onCloseRef.current())
   }
@@ -253,7 +253,7 @@ export function Menu({
   if (!open) return null
 
   const paper = (
-    <MenuContext.Provider
+    <LightMenuContext.Provider
       value={{
         close: onClose,
         closeRoot: () => tree.closeRoot(),
@@ -270,7 +270,7 @@ export function Menu({
         tabIndex={-1}
         style={style}
         className={cn(
-          'mui-menu-enter fixed rounded bg-white py-2 shadow-mui-8 outline-none',
+          'light-menu-enter fixed rounded bg-white py-2 shadow-light-menu-8 outline-none',
           matchWidth ? 'origin-top' : 'origin-top-left',
         )}
       >
@@ -278,19 +278,19 @@ export function Menu({
           {children}
         </ul>
       </div>
-    </MenuContext.Provider>
+    </LightMenuContext.Provider>
   )
 
   const portaled = createPortal(paper, document.body)
   if (isRoot) {
     return (
-      <MenuTreeContext.Provider value={tree}>{portaled}</MenuTreeContext.Provider>
+      <LightMenuTreeContext.Provider value={tree}>{portaled}</LightMenuTreeContext.Provider>
     )
   }
   return portaled
 }
 
-export type MenuItemProps = {
+export type LightMenuItemProps = {
   children: ReactNode
   onClick?: () => void
   disabled?: boolean
@@ -300,7 +300,7 @@ export type MenuItemProps = {
   shortcut?: string
 }
 
-export function MenuItem({
+export function LightMenuItem({
   children,
   onClick,
   disabled = false,
@@ -308,8 +308,8 @@ export function MenuItem({
   highlighted = false,
   icon,
   shortcut,
-}: MenuItemProps) {
-  const ctx = useContext(MenuContext)
+}: LightMenuItemProps) {
+  const ctx = useContext(LightMenuContext)
 
   return (
     <li role="none">
@@ -324,7 +324,7 @@ export function MenuItem({
           onClick?.()
           ctx?.closeRoot()
         }}
-        className={menuItemClass({
+        className={lightMenuItemClass({
           dense: ctx?.dense,
           selected,
           highlighted,
@@ -335,8 +335,8 @@ export function MenuItem({
           <span
             className={cn(
               'mr-4 inline-flex h-6 w-6 shrink-0 items-center justify-center',
-              selected ? 'text-mui-primary' : 'text-black/54',
-              disabled && 'text-black/[0.38]',
+              selected ? 'text-light-menu-primary' : 'text-black/54',
+              disabled && 'text-black/38',
             )}
           >
             {icon}
@@ -353,24 +353,24 @@ export function MenuItem({
   )
 }
 
-export function MenuDivider() {
-  return <li role="separator" className="my-2 h-px list-none bg-black/[0.12]" />
+export function LightMenuDivider() {
+  return <li role="separator" className="my-2 h-px list-none bg-black/12" />
 }
 
-export type SubMenuProps = {
+export type LightMenuSubMenuProps = {
   label: ReactNode
   children: ReactNode
   icon?: ReactNode
   disabled?: boolean
 }
 
-export function SubMenu({
+export function LightMenuSubMenu({
   label,
   children,
   icon,
   disabled = false,
-}: SubMenuProps) {
-  const ctx = useContext(MenuContext)
+}: LightMenuSubMenuProps) {
+  const ctx = useContext(LightMenuContext)
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
   const [focusOnOpen, setFocusOnOpen] = useState(false)
@@ -401,7 +401,7 @@ export function SubMenu({
             openSubmenu(true)
           }
         }}
-        className={menuItemClass({
+        className={lightMenuItemClass({
           dense: ctx?.dense,
           disabled,
           open,
@@ -417,7 +417,7 @@ export function SubMenu({
           <ChevronRightIcon />
         </span>
       </button>
-      <Menu
+      <LightMenu
         open={Boolean(open && triggerRef.current)}
         anchorEl={triggerRef.current}
         onClose={() => ctx?.setOpenSubmenuId(null)}
@@ -427,12 +427,12 @@ export function SubMenu({
         minWidth={160}
       >
         {children}
-      </Menu>
+      </LightMenu>
     </li>
   )
 }
 
-export type MenuButtonProps = {
+export type LightMenuButtonProps = {
   label: ReactNode
   children: ReactNode
   dense?: boolean
@@ -440,13 +440,13 @@ export type MenuButtonProps = {
   minWidth?: number
 }
 
-export function MenuButton({
+export function LightMenuButton({
   label,
   children,
   dense,
   variant = 'text',
   minWidth,
-}: MenuButtonProps) {
+}: LightMenuButtonProps) {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
   const open = Boolean(anchorEl)
 
@@ -461,17 +461,17 @@ export function MenuButton({
         }}
         className={cn(
           'relative inline-flex items-center justify-center overflow-hidden rounded font-sans text-sm font-medium tracking-[0.02857em] uppercase',
-          'min-h-[36.5px] px-2 py-[6px] text-mui-primary',
-          'hover:bg-mui-primary/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mui-primary',
+          'min-h-[36.5px] px-2 py-1.5 text-light-menu-primary',
+          'hover:bg-light-menu-primary/4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-light-menu-primary',
           variant === 'contained' &&
-            'bg-mui-primary px-4 text-white shadow-mui-2 hover:bg-mui-primary-dark hover:shadow-mui-4',
+            'bg-light-menu-primary px-4 text-white shadow-light-menu-2 hover:bg-light-menu-primary-dark hover:shadow-light-menu-4',
           variant === 'outlined' &&
-            'border border-mui-primary/50 px-4 hover:bg-mui-primary/[0.04]',
+            'border border-light-menu-primary/50 px-4 hover:bg-light-menu-primary/4',
         )}
       >
         {label}
       </button>
-      <Menu
+      <LightMenu
         open={open}
         anchorEl={anchorEl}
         onClose={() => setAnchorEl(null)}
@@ -479,7 +479,7 @@ export function MenuButton({
         minWidth={minWidth ?? 112}
       >
         {children}
-      </Menu>
+      </LightMenu>
     </>
   )
 }
