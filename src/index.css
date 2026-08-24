@@ -34,13 +34,6 @@
   }
 }
 
-@keyframes mui-ripple {
-  to {
-    transform: scale(4);
-    opacity: 0;
-  }
-}
-
 .mui-menu-enter {
   animation: mui-grow 200ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }

@@ -12,7 +12,6 @@ import {
 import { createPortal } from 'react-dom'
 import { cn } from '../lib/cn'
 import { ChevronRightIcon } from './icons'
-import { useRipple } from './Ripple'
 
 type MenuPlacement = 'overlay' | 'bottom' | 'right'
 
@@ -77,7 +76,7 @@ function menuItemClass({
   open?: boolean
 }) {
   return cn(
-    'relative flex w-full cursor-pointer items-center overflow-hidden border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-mui-text outline-none select-none',
+    'relative flex w-full cursor-pointer items-center border-0 bg-transparent px-4 text-left font-sans text-base leading-[1.5] tracking-[0.00938em] text-mui-text outline-none select-none',
     dense ? 'min-h-9 py-1.5' : 'min-h-12 py-[6px]',
     'hover:bg-black/[0.04] focus:bg-black/[0.04]',
     (highlighted || open) && !selected && 'bg-black/[0.04]',
@@ -311,9 +310,6 @@ export function MenuItem({
   shortcut,
 }: MenuItemProps) {
   const ctx = useContext(MenuContext)
-  const { onPointerDown, layer } = useRipple(
-    selected ? 'bg-mui-primary/25' : 'bg-black/20',
-  )
 
   return (
     <li role="none">
@@ -322,7 +318,6 @@ export function MenuItem({
         role={ctx?.itemRole ?? 'menuitem'}
         disabled={disabled}
         aria-selected={ctx?.itemRole === 'option' ? selected : undefined}
-        onPointerDown={disabled ? undefined : onPointerDown}
         onMouseEnter={() => ctx?.setOpenSubmenuId(null)}
         onClick={() => {
           if (disabled) return
@@ -353,7 +348,6 @@ export function MenuItem({
             {shortcut}
           </span>
         ) : null}
-        {layer}
       </button>
     </li>
   )
@@ -379,7 +373,6 @@ export function SubMenu({
   const ctx = useContext(MenuContext)
   const id = useId()
   const triggerRef = useRef<HTMLButtonElement>(null)
-  const { onPointerDown, layer } = useRipple('bg-black/20')
   const [focusOnOpen, setFocusOnOpen] = useState(false)
 
   const open = ctx?.openSubmenuId === id
@@ -399,7 +392,6 @@ export function SubMenu({
         disabled={disabled}
         aria-haspopup="menu"
         aria-expanded={open}
-        onPointerDown={disabled ? undefined : onPointerDown}
         onMouseEnter={() => openSubmenu(false)}
         onClick={() => openSubmenu(false)}
         onKeyDown={(event) => {
@@ -424,7 +416,6 @@ export function SubMenu({
         <span className="ml-4 inline-flex text-black/54">
           <ChevronRightIcon />
         </span>
-        {layer}
       </button>
       <Menu
         open={Boolean(open && triggerRef.current)}
